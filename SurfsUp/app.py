@@ -55,34 +55,34 @@ def precipitation():
 
     results = list(np.ravel(precipitation))
     
-    # precipitation = []
+    # precipitation_list = []
     # for date, prcp in results:
     #     precipitation_dict = {}
     #     precipitation_dict["Date"] = date
     #     precipitation_dict["Precipitation"] = prcp
     #     precipitation.append(precipitation_dict)
-    # return jsonify(precipitation)
+    # return jsonify(precipitation_list)
     return jsonify(results)
 
 
 @app.route("/api/v1.0/station")
-def station():
+def stations():
    
     session = Session(engine)
     
-    station = session.query(Station.station,Station.name).all()
+    stations = session.query(Station.station,Station.name).all()
 
     session.close()
 
-    results = list(np.ravel(station))
+    results = list(np.ravel(stations))
     
-    # station = []
+    # station_name = []
     # for station, name in results:
     #     station_dict = {}
     #     station_dict["Station"] = station
     #     station_dict["Name"] = name
     #     precipitation.append(station_dict)
-
+    # return jsonify(station_name)
     return jsonify(results)
 
 @app.route("/api/v1.0/tobs")
