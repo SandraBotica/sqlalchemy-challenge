@@ -39,7 +39,9 @@ def welcome():
         f"/api/v1.0/stations<br/>"
         f"/api/v1.0/tobs<br/>"
         f"/api/v1.0/<start>"
-         f"/api/v1.0/<start>/<end>"
+        f"Enter start date"
+        f"(start date must be in YYYY-MM-DD format)<br/>"
+        f"/api/v1.0/<start>/<end>"
     )
 
 @app.route("/api/v1.0/precipitation")
@@ -47,18 +49,20 @@ def precipitation():
  
     session = Session(engine)
     
-    results = session.query(Measurement.date,Measurement.prcp).all()
+    precipitation = session.query(Measurement.date,Measurement.prcp).all()
 
     session.close()
 
-    precipitation = []
-    for date, prcp in results:
-        precipitation_dict = {}
-        precipitation_dict["Date"] = date
-        precipitation_dict["Precipitation"] = prcp
-        precipitation.append(precipitation_dict)
-
-    return jsonify(precipitation)
+    results = list(np.ravel(precipitation))
+    
+    # precipitation = []
+    # for date, prcp in results:
+    #     precipitation_dict = {}
+    #     precipitation_dict["Date"] = date
+    #     precipitation_dict["Precipitation"] = prcp
+    #     precipitation.append(precipitation_dict)
+    # return jsonify(precipitation)
+    return jsonify(results)
 
 
 @app.route("/api/v1.0/station")
@@ -66,40 +70,77 @@ def station():
    
     session = Session(engine)
     
-    results = session.query(Station.station,Station.name).all()
+    station = session.query(Station.station,Station.name).all()
 
     session.close()
 
-    station = []
-    for station, name in results:
-        station_dict = {}
-        station_dict["Station"] = station
-        station_dict["Name"] = name
-        precipitation.append(station_dict)
+    results = list(np.ravel(station))
+    
+    # station = []
+    # for station, name in results:
+    #     station_dict = {}
+    #     station_dict["Station"] = station
+    #     station_dict["Name"] = name
+    #     precipitation.append(station_dict)
 
-    return jsonify(station)
+    return jsonify(results)
 
 @app.route("/api/v1.0/tobs")
 def temperature():
 
+    query_date_12_months = dt.date(2016, 8, 17) 
+    
     session = Session(engine)
     
-    query_date_12_months = dt.date(2016, 8, 17) 
-    results = session.query(Measurement.station, Measurement.date, Measurement.tobs).\
+    temperature = session.query(Measurement.tobs).\
         filter(Measurement.station == 'USC00519281').\
         order_by(Measurement.date.asc()).\
-            filter(func.strftime(Measurement.date) > query_date_12_months).all()
+        filter(func.strftime(Measurement.date) > query_date_12_months).all()
     
     session.close()
+    
+    results = list(np.ravel(temperature))
 
-    temperature = []
-    for date, tobs in results:
-        temperature_dict = {}
-        temperature_dict["Date"] = date
-        temperature_dict["Temperature"] = tobs
-        precipitation.append(temperature_dict)
-        
-    return jsonify(temperature)
+    # temperature = []
+    # for date, tobs in results:
+    #     temperature_dict = {}
+    #     temperature_dict["Date"] = date
+    #     temperature_dict["Temperature"] = tobs
+    #     precipitation.append(temperature_dict)
+    # return jsonify(temperature)
+    
+    return jsonify(results)
+
+@app.route("/api/v1.0/<start>")
+def starting_date(start):
+    
+    session = Session(engine)
+    
+    starting_date = session.query(func.min(Measurement.tobs),func.avg(Measurement.tobs),func.max(Measurement.tobs)).\
+        filter(Measurement.date >= start).all()
+    
+    session.close()
+    
+    results = list(np.ravel(starting_date))
+    
+    return jsonify(results)
+
+@app.route("/api/v1.0/<start>/<end>")
+def starting_end_date(start,end):
+    
+    session = Session(engine)
+    
+    starting_end_date = session.query(func.min(Measurement.tobs),func.avg(Measurement.tobs),func.max(Measurement.tobs)).\
+        filter(Measurement.date >= start).\
+            filter(Measurement.date <= end).all()
+    
+    session.close()
+    
+    results = list(np.ravel(starting_end_date))
+    
+    return jsonify(results)
+
+
 
 if __name__ == '__main__':
     app.run(debug=True)
