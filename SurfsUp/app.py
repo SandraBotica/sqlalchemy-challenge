@@ -29,7 +29,7 @@ Station = Base.classes.station
 app = Flask(__name__)
 
 #################################################
-
+# Displaying Available routes on landing page
 @app.route("/")
 def welcome():
     return (
@@ -38,107 +38,128 @@ def welcome():
         f"/api/v1.0/precipitation<br/>"
         f"/api/v1.0/stations<br/>"
         f"/api/v1.0/tobs<br/>"
-        f"/api/v1.0/<start>"
-        f"Enter start date"
-        f"(start date must be in YYYY-MM-DD format)<br/>"
-        f"/api/v1.0/<start>/<end>"
+        f"Enter a start date in YYYY-MM-DD format after/<br/>"
+        f"/api/v1.0/<start><br/>"
+        f"Enter a start date in YYYY-MM-DD format after the first/ and an end date after the second/<br/>"
+        f"/api/v1.0/<start>/<end><br/>"
     )
+# Creating precipitation route 
+# Converting query into a dictionary with date as the key and precipitation as the value
+# Filtering for just last 12 months of precipitation values
+# Returning json representation of the dictionary
 
 @app.route("/api/v1.0/precipitation")
 def precipitation():
  
     session = Session(engine)
     
-    precipitation = session.query(Measurement.date,Measurement.prcp).all()
+    date_12_months = dt.date(2016, 8, 22) 
+    
+    precipitations = session.query(Measurement.date,Measurement.prcp).\
+        order_by(Measurement.date.asc()).\
+        filter(func.strftime(Measurement.date) > date_12_months).all()
 
     session.close()
-
-    results = list(np.ravel(precipitation))
     
-    # precipitation_list = []
-    # for date, prcp in results:
-    #     precipitation_dict = {}
-    #     precipitation_dict["Date"] = date
-    #     precipitation_dict["Precipitation"] = prcp
-    #     precipitation.append(precipitation_dict)
-    # return jsonify(precipitation_list)
-    return jsonify(results)
+    precipitation_list = []
+    for date, prcp in precipitations:
+        precipitation_dict = {date:prcp}
+        precipitation_list.append(precipitation_dict)
+    return jsonify(precipitation_list)
 
+# Creating stations route 
+# Converting query into a list of station id's and the station name
+# Returning json representation of the list
 
-@app.route("/api/v1.0/station")
+@app.route("/api/v1.0/stations")
 def stations():
    
     session = Session(engine)
     
-    stations = session.query(Station.station,Station.name).all()
+    stations_query = session.query(Station.station,Station.name).all()
 
     session.close()
 
-    results = list(np.ravel(stations))
+    results = list(np.ravel(stations_query))
     
-    # station_name = []
-    # for station, name in results:
-    #     station_dict = {}
-    #     station_dict["Station"] = station
-    #     station_dict["Name"] = name
-    #     precipitation.append(station_dict)
-    # return jsonify(station_name)
     return jsonify(results)
+
+# Creating temperature route 
+# Converting query into a list of temperatures for the most active station
+# Filtering for just last 12 months of temperature values
+# Returning json representation of the list
 
 @app.route("/api/v1.0/tobs")
 def temperature():
-
-    query_date_12_months = dt.date(2016, 8, 17) 
     
     session = Session(engine)
     
-    temperature = session.query(Measurement.tobs).\
+    query_date_12_months = dt.date(2016, 8, 17) 
+    
+    temperature_query = session.query(Measurement.tobs).\
         filter(Measurement.station == 'USC00519281').\
         order_by(Measurement.date.asc()).\
         filter(func.strftime(Measurement.date) > query_date_12_months).all()
     
     session.close()
     
-    results = list(np.ravel(temperature))
-
-    # temperature = []
-    # for date, tobs in results:
-    #     temperature_dict = {}
-    #     temperature_dict["Date"] = date
-    #     temperature_dict["Temperature"] = tobs
-    #     precipitation.append(temperature_dict)
-    # return jsonify(temperature)
+    results = list(np.ravel(temperature_query))
     
     return jsonify(results)
 
-@app.route("/api/v1.0/<start>")
+# Creating a route for a <start date> to be entered
+# Converting query into a list of min, max and average temperatures 
+# Filtering for temperature values from entered <start date> to last date in dataset
+# Returning json representation of the list
+
+@app.route("/api/v1.0/<start><br/>")
 def starting_date(start):
-    
+
+    """Fetch the temperatures from start date matches to last date of dataset 
+    as a path variable supplied by the user, or a 404 if not."""
+     
     session = Session(engine)
     
-    starting_date = session.query(func.min(Measurement.tobs),func.avg(Measurement.tobs),func.max(Measurement.tobs)).\
+    start = ()
+    
+    starting_date_list = session.query(func.min(Measurement.tobs),func.avg(Measurement.tobs),func.max(Measurement.tobs)).\
         filter(Measurement.date >= start).all()
     
     session.close()
     
-    results = list(np.ravel(starting_date))
-    
-    return jsonify(results)
+    date_list= []
+    for min, max, avg in starting_date_list:
+        temp_list = [min,max,avg]
+        date_list.append(temp_list)
 
-@app.route("/api/v1.0/<start>/<end>")
-def starting_end_date(start,end):
+    # return jsonify({"error": f"Start date {start} not found."}), 404
+   
+    # results = list(np.ravel(starting_date_list))
     
-    session = Session(engine)
+    return jsonify(date_list)
+
+# Creating a route for a <start date> and <end> to be entered
+# Converting query into a list of min, max and average temperatures 
+# Filtering for temperature values from entered <start date> to <end>
+# Returning json representation of the list
+
+# @app.route("/api/v1.0/<start>/<end><br/>")
+# def starting_end_date(start,end):
     
-    starting_end_date = session.query(func.min(Measurement.tobs),func.avg(Measurement.tobs),func.max(Measurement.tobs)).\
-        filter(Measurement.date >= start).\
-            filter(Measurement.date <= end).all()
+#     session = Session(engine)
     
-    session.close()
+#     start = dt.date("<start>")
+#     end = dt.date("<end>")
     
-    results = list(np.ravel(starting_end_date))
+#     starting_end_date_list = session.query(func.min(Measurement.tobs),func.avg(Measurement.tobs),func.max(Measurement.tobs)).\
+#         filter(Measurement.date >= start).\
+#             filter(Measurement.date <= end).all()
     
-    return jsonify(results)
+#     session.close()
+    
+#     results = list(np.ravel(starting_end_date_list))
+    
+#     return jsonify(results)
 
 
 
