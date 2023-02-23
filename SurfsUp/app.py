@@ -38,9 +38,13 @@ def welcome():
         f"/api/v1.0/precipitation<br/>"
         f"/api/v1.0/stations<br/>"
         f"/api/v1.0/tobs<br/>"
-        f"Enter a start date in YYYY-MM-DD format after/<br/>"
+        f"Using the route below<br/>"
+        f"Enter a start date in YYYYMMDD format after/<br/>"
+        f"The start date can be between 20100101-20170823<br/>"
         f"/api/v1.0/<start><br/>"
-        f"Enter a start date in YYYY-MM-DD format after the first/ and an end date after the second/<br/>"
+        f"Using the route below<br/>"
+        f"Enter a start date in YYYYMMDD format after the first/ and an end date after the second/<br/>"
+        f"The start and end date can be between 20100101-20170823<br/>"
         f"/api/v1.0/<start>/<end><br/>"
     )
 # Creating precipitation route 
@@ -107,59 +111,60 @@ def temperature():
     
     return jsonify(results)
 
-# Creating a route for a <start date> to be entered
+# Creating a route for a <start> date to be entered
 # Converting query into a list of min, max and average temperatures 
-# Filtering for temperature values from entered <start date> to last date in dataset
+# Filtering for temperature values from entered <start> date to last date in dataset
 # Returning json representation of the list
 
-@app.route("/api/v1.0/<start><br/>")
+@app.route("/api/v1.0/<start>")
 def starting_date(start):
 
-    """Fetch the temperatures from start date matches to last date of dataset 
+    """Fetch the temperatures from start date entered to last date of dataset 
     as a path variable supplied by the user, or a 404 if not."""
      
     session = Session(engine)
     
-    start = ()
+    start=dt.datetime.strptime(start, "%Y%m%d")
     
     starting_date_list = session.query(func.min(Measurement.tobs),func.avg(Measurement.tobs),func.max(Measurement.tobs)).\
         filter(Measurement.date >= start).all()
     
     session.close()
-    
-    date_list= []
-    for min, max, avg in starting_date_list:
-        temp_list = [min,max,avg]
-        date_list.append(temp_list)
-
-    # return jsonify({"error": f"Start date {start} not found."}), 404
    
-    # results = list(np.ravel(starting_date_list))
+    results = list(np.ravel(starting_date_list))
     
-    return jsonify(date_list)
+    # return jsonify({"error": f"Start date {start} not found."}), 404
+    return jsonify(results)
+    # return jsonify({f"The min temp: " (results)[0][0], "The average temp: " (results)[0][1],"The max temp: " (results)[0][2]})
+    
 
-# Creating a route for a <start date> and <end> to be entered
+# Creating a route for a <start> date and <end> date to be entered
 # Converting query into a list of min, max and average temperatures 
-# Filtering for temperature values from entered <start date> to <end>
+# Filtering for temperature values from entered <start> to <end> date
 # Returning json representation of the list
 
-# @app.route("/api/v1.0/<start>/<end><br/>")
-# def starting_end_date(start,end):
+@app.route("/api/v1.0/<start>/<end>")
+def starting_end_date(start,end):
     
-#     session = Session(engine)
+    # """Fetch the temperatures from start to end date of dataset 
+    # as a path variable supplied by the user, or a 404 if not."""
     
-#     start = dt.date("<start>")
-#     end = dt.date("<end>")
+    session = Session(engine)
     
-#     starting_end_date_list = session.query(func.min(Measurement.tobs),func.avg(Measurement.tobs),func.max(Measurement.tobs)).\
-#         filter(Measurement.date >= start).\
-#             filter(Measurement.date <= end).all()
+    start=dt.datetime.strptime(start, "%Y%m%d")
+    end=dt.datetime.strptime(end, "%Y%m%d")
     
-#     session.close()
+    starting_end_date_list = session.query(func.min(Measurement.tobs),func.avg(Measurement.tobs),func.max(Measurement.tobs)).\
+        filter(Measurement.date >= start).\
+            filter(Measurement.date <= end).all()
     
-#     results = list(np.ravel(starting_end_date_list))
+    session.close()
     
-#     return jsonify(results)
+    # return jsonify({"error": f"Start date {start} and End date {end} not found."}), 404
+    results = list(np.ravel(starting_end_date_list))
+    
+    return jsonify(results)
+    # return jsonify({f"The Min, Average and Max temperature for the date range selected is {results}"})
 
 
 
