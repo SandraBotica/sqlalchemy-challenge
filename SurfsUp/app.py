@@ -41,10 +41,12 @@ def welcome():
         f"Using the route below<br/>"
         f"Enter a start date in YYYYMMDD format after/<br/>"
         f"The start date can be between 20100101-20170823<br/>"
+        f"This will display the min, average and max value of temperature from the start date to 20170823<br/>"
         f"/api/v1.0/<start><br/>"
         f"Using the route below<br/>"
         f"Enter a start date in YYYYMMDD format after the first/ and an end date after the second/<br/>"
         f"The start and end date can be between 20100101-20170823<br/>"
+        f"This will display the min, average and max value of temperature from the start to end date<br/>"
         f"/api/v1.0/<start>/<end><br/>"
     )
 # Creating precipitation route 
@@ -54,11 +56,11 @@ def welcome():
 
 @app.route("/api/v1.0/precipitation")
 def precipitation():
- 
+    # Create our session (link) from Python to the DB
     session = Session(engine)
     
     date_12_months = dt.date(2016, 8, 22) 
-    
+  
     precipitations = session.query(Measurement.date,Measurement.prcp).\
         order_by(Measurement.date.asc()).\
         filter(func.strftime(Measurement.date) > date_12_months).all()
@@ -77,7 +79,7 @@ def precipitation():
 
 @app.route("/api/v1.0/stations")
 def stations():
-   
+    # Create our session (link) from Python to the DB
     session = Session(engine)
     
     stations_query = session.query(Station.station,Station.name).all()
@@ -95,7 +97,7 @@ def stations():
 
 @app.route("/api/v1.0/tobs")
 def temperature():
-    
+    # Create our session (link) from Python to the DB
     session = Session(engine)
     
     query_date_12_months = dt.date(2016, 8, 17) 
@@ -120,8 +122,9 @@ def temperature():
 def starting_date(start):
 
     """Fetch the temperatures from start date entered to last date of dataset 
-    as a path variable supplied by the user, or a 404 if not."""
-     
+    as a path variable supplied by the user."""
+    
+    # Create our session (link) from Python to the DB
     session = Session(engine)
     
     start=dt.datetime.strptime(start, "%Y%m%d")
@@ -133,7 +136,6 @@ def starting_date(start):
    
     results = list(np.ravel(starting_date_list))
     
-    # return jsonify({"error": f"Start date {start} not found."}), 404
     return jsonify(results)
     # return jsonify({f"The min temp: " (results)[0][0], "The average temp: " (results)[0][1],"The max temp: " (results)[0][2]})
     
@@ -146,9 +148,10 @@ def starting_date(start):
 @app.route("/api/v1.0/<start>/<end>")
 def starting_end_date(start,end):
     
-    # """Fetch the temperatures from start to end date of dataset 
-    # as a path variable supplied by the user, or a 404 if not."""
+    """Fetch the temperatures from start to end date of dataset 
+    as a path variable supplied by the user."""
     
+    # Create our session (link) from Python to the DB
     session = Session(engine)
     
     start=dt.datetime.strptime(start, "%Y%m%d")
@@ -160,7 +163,6 @@ def starting_end_date(start,end):
     
     session.close()
     
-    # return jsonify({"error": f"Start date {start} and End date {end} not found."}), 404
     results = list(np.ravel(starting_end_date_list))
     
     return jsonify(results)
